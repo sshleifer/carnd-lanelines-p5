@@ -1,4 +1,5 @@
 import cv2
+from moviepy.editor import VideoFileClip, ImageSequenceClip
 import numpy as np
 from lane_lines.line import Lane
 from lane_lines.fit_poly import fit_poly, warp, get_threshd_image, Minv, draw_line
@@ -32,21 +33,14 @@ def video_pipeline(clip):
     logs = []
     usedl = []
     usedr = []
+    imgs = []
 
-
-    def process_image(img, Minv=Minv):
-        global l_curve
-        global r_curve
-        global right_lane
-        # global left_lane
-        global logs
-        global usedl
-        global usedr
-        binary_warped = warp(get_threshd_image(img))
+    for k in clip.iter_frames():
+        binary_warped = warp(get_threshd_image(k))
         big_tuple = fit_poly(binary_warped)
         left_fit, right_fit, left_curve, right_curve, offset = big_tuple[:5]
-        #logs.append([
-        #    left_fit, right_fit, left_curve, right_curve, offset])
+        logs.append([
+            left_fit, right_fit, left_curve, right_curve, offset])
 
         overwrite = is_valid_curve(l_curve,
                                    r_curve,
@@ -58,19 +52,18 @@ def video_pipeline(clip):
             r_curve = right_curve
             left_fit = left_fit
             right_fit = right_fit
-            #left_lane = Lane(left_fit, left_curve)
-            #right_lane = Lane(right_fit, right_curve)
+            # left_lane = Lane(left_fit, left_curve)
+            # right_lane = Lane(right_fit, right_curve)
             # usedl.append(left_lane)
             # usedr.append(right_lane)
 
-        output = draw_line(img, left_fit, right_fit, Minv)
+        output = draw_line(k, left_fit, right_fit, Minv)
         _put_text(output, 'Left curvature: {:.0f} m'.format(l_curve),
                   50)
         _put_text(output, 'Right curvature: {:.0f} m'.format(r_curve),
                   100)
         _put_text(output, 'Vehicle is {:.2f}M right of center'.format(offset),
                   150)
-        return output
+        imgs.append(output)
 
-    c2 = clip.fl_image(process_image)
-    return c2
+    return imgs, logs
