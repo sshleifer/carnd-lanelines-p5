@@ -19,7 +19,7 @@ def window_mask(width, height, img_ref, center, level):
     return output
 
 
-def find_window_centroids(image, window_width, window_height, margin):
+def find_window_centroids(warped, window_width, window_height, margin):
     window_centroids = []  # Store the (left,right) window centroid positions per level
     window = np.ones(window_width)  # Create our window template that we will use for convolutions
 

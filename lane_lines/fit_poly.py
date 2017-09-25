@@ -1,12 +1,63 @@
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+import pickle
 
-# Assuming you have created a warped binary image called "binary_warped"
-    # Take a histogram of the bottom half of the image
-def fit_poly(binary_warped, no_plot=False):
+from lane_lines.sobel_utils import apply_threshold, abs_sobel_thresh, direction_thresh, mag_thresh
 
-    histogram = np.sum(binary_warped[binary_warped.shape[0]/2:,:], axis=0)
+ym_per_pix = 30/720 # meters per pixel in y dimension
+xm_per_pix = 3.7/700 # meters per pixel in x dimension
+
+M, Minv, mtx, dist = pickle.load(open('./pickled_data/camera_calibration.p', 'rb'))
+
+
+def rgb_read(path):
+    srcBGR = cv2.imread(path)
+    return cv2.cvtColor(srcBGR, cv2.COLOR_BGR2RGB)
+
+def undistort_and_hls(image, mtx=mtx, dist=dist):
+    undist = cv2.undistort(image, mtx, dist, None, mtx)
+    hls = cv2.cvtColor(undist, cv2.COLOR_BGR2HLS)
+    return hls
+
+def get_s_channel(image, mtx=mtx, dist=dist):
+    return undistort_and_hls(image, mtx, dist)[:,:,2]
+
+
+def warp(img):
+    img_size = (img.shape[1], img.shape[0])
+    warped = cv2.warpPerspective(img, M, img_size)
+    return warped
+
+def get_threshd_image(img):
+    schannel = get_s_channel(img)
+    x_sobel_threshd = abs_sobel_thresh(schannel, orient='x', thresh_min=10, thresh_max=160)
+    y_sobel_threshd = abs_sobel_thresh(schannel, orient='y', thresh_min=10, thresh_max=160)
+    combined_mask = x_sobel_threshd | y_sobel_threshd #| mag_threshd # dont use dir_bthresh
+    return combined_mask.astype('uint8')
+
+
+def get_curvature(a, b, y):
+    numer = (1 + (2*a*y+b)**2)**1.5
+    denom = np.abs(2*a)
+    return numer / denom
+
+def get_offset(img, left_fit_m, right_fit_m):
+    left_line_loc = predict_poly(left_fit_m, img.shape[1] * xm_per_pix)
+    right_line_loc = predict_poly(right_fit_m, img.shape[1] * xm_per_pix)
+    vehicle = img.shape[1]*xm_per_pix / 2.
+    center = np.mean([left_line_loc, right_line_loc])
+    return vehicle - center
+
+
+def predict_poly(coeffs, val):
+    return coeffs[0] * val**2 + coeffs[1] * val + coeffs[2]
+
+
+def fit_poly(binary_warped, xm_per_pix=xm_per_pix, ym_per_pix=ym_per_pix):
+
+    histogram = np.sum(binary_warped[binary_warped.shape[0]//2:,:], axis=0)
+
     # Create an output image to draw on and  visualize the result
     out_img = np.dstack((binary_warped, binary_warped, binary_warped))*255
     # Find the peak of the left and right halves of the histogram
@@ -76,26 +127,38 @@ def fit_poly(binary_warped, no_plot=False):
     left_fit = np.polyfit(lefty, leftx, 2)
     right_fit = np.polyfit(righty, rightx, 2)
     ploty = np.linspace(0, binary_warped.shape[0]-1, binary_warped.shape[0] )
+
     left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
     right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
-    if no_plot:
-        return left_fit, right_fit
+
+    # Fit new polynomials to x,y in world space
+    left_fit_cr = np.polyfit(lefty * ym_per_pix, leftx * xm_per_pix, 2)
+    right_fit_cr = np.polyfit(righty * ym_per_pix, rightx * xm_per_pix, 2)
+    y_eval = max(ploty)
+    # Calculate the new radii of curvature
+    left_curverad = get_curvature(left_fit_cr[0], left_fit_cr[1], y_eval)
+    right_curverad = get_curvature(right_fit_cr[0], right_fit_cr[1], y_eval)
+    offset = get_offset(out_img, left_fit_cr, right_fit_cr)
     out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
     out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
-    plt.imshow(out_img)
-    plt.plot(left_fitx, ploty, color='yellow')
-    plt.plot(right_fitx, ploty, color='yellow')
-    plt.xlim(0, 1280)
-    plt.ylim(720, 0)
+    return (left_fit, right_fit,
+            left_curverad, right_curverad, offset,
+            left_lane_inds, right_lane_inds,
+            out_img,  nonzerox, nonzeroy)
 
 
-def draw_in_real_space(image, warped, ploty, left_fitx, right_fitx, Minv, undist):
-    '''from Tips and Tricks Drawing submodule'''
-    # Create an image to draw the lines on
-    warp_zero = np.zeros_like(warped).astype(np.uint8)
-    color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
+def draw_line(img, left_fit, right_fit, Minv):
+    '''Draw the lane lines on the image `img` using the poly `left_fit` and `right_fit`.'''
+    yMax = img.shape[0]
+    ploty = np.linspace(0, yMax - 1, yMax)
+    color_warp = np.zeros_like(img).astype(np.uint8)
+
+    # Calculate points.
+    left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
+    right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
 
     # Recast the x and y points into usable format for cv2.fillPoly()
+    # from Tips and Tricks Drawing submodule
     pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
     pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
     pts = np.hstack((pts_left, pts_right))
@@ -104,10 +167,7 @@ def draw_in_real_space(image, warped, ploty, left_fitx, right_fitx, Minv, undist
     cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
 
     # Warp the blank back to original image space using inverse perspective matrix (Minv)
-    newwarp = cv2.warpPerspective(color_warp, Minv,
-                                  (image.shape[1], image.shape[0]))
-    # Combine the result with the original image
-    result = cv2.addWeighted(undist, 1, newwarp, 0.3, 0)
-    plt.imshow(result)
+    newwarp = cv2.warpPerspective(color_warp, Minv, (img.shape[1], img.shape[0]))
+    return cv2.addWeighted(img, 1, newwarp, 0.3, 0)
 
 

@@ -24,7 +24,7 @@ import glob
 import time
 from tqdm import tqdm
 import statsmodels.formula.api as smf
-import pysftp
+# import pysftp
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -32,7 +32,7 @@ import matplotlib.image as mpimg
 import glob
 import cv2
 import tensorflow as tf
-
+from PIL import Image
 # plt.rc('figure', figsize=(10, 6))
 
 # Handy scikit-learn stuff

@@ -1,5 +1,14 @@
 import numpy as np
 
+
+
+class Lane():
+    def __init__(self, fit=None,curve=None,  fit_m=None, offset=None):
+        self.fit = fit
+        self.fit_m = fit_m
+        self.curve = curve
+        self.offset = offset
+
 class Line():
     def __init__(self):
         # was the line detected in the last iteration?
