@@ -30,15 +30,11 @@ The goals / steps of this project are the following:
 ### Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
 
 The code for this step is contained in the first code cell of the IPython notebook located in "p5.ipynb" under the first header and follows closely from the lecture. We assume object points are the corners of the chessboard in the real world (so 0,0,0, for example), and then, for each chessboard image, store the imagepoints, the result of `cv2.findChessboardCorners` We then call `calibrateCamera` to learn a mapping from object points to image points, and then `cv2.undistort` to use the mapping to remove the distortion from other images. The result is below:
-
 ![alt text][image1]
-
 ### Pipeline (single images)
 
 #### 1. Provide an example of a distortion-corrected image.
-
 ![alt text][image2]
-
 #### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 
 lane_lines.sobel_utils.get_threshd_image at line 51, contains the final filter I used, all other filters are in that module. The code borrows heavily from the lecture but deletes some lines by making numpy masks in one step with the `apply_threshold` helper.
@@ -48,9 +44,7 @@ The preprocesisng pipeline works as follows:
   - convert to LHS and extract S channel
   - use cv2.sobel to filter to pixels where the x or y derivate is between 10 and 160
     - (implemented but did not use magnitude and direction threshold)
-
 ![alt text][image3]
-
 #### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
 The code for my perspective transform is run by the `warp` function but leverages `M` and `Minv` created in the notebook
@@ -64,13 +58,9 @@ The `warper()` function takes as inputs an image (`img`), as well as source (`sr
 | 190, 720      | 1080, 0       |
 
 The lane lines do, in fact look reasonably straight after warping:
-
 ![alt text][image4]
-
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
-
 ![alt text][image5]
-
 First, we choose the starting columns for a window by looking at the columns of the binary image with the largest sums to the left and right of the middle of the image, and creating of 100 pixels around that peak column. (we assume car currently in lane :))
 
 For each side,  starting from the first (lowest green) box,
@@ -95,9 +85,7 @@ We find the vehicle's position in the lane by assuming it is in the middle of th
 #### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
 I copied code to draw lines on the image from the lecture.
-
 ![alt text][image6]
-
 ---
 
 ### Pipeline (video)
@@ -105,7 +93,6 @@ I copied code to draw lines on the image from the lecture.
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
 
 Here's a [link to my video result](./my_project_video.mp4)
-
 ---
 
 ### Discussion
