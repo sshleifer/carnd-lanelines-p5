@@ -69,17 +69,32 @@ The lane lines do, in fact look reasonably straight after warping:
 
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
-
 ![alt text][image5]
+
+First, we choose the starting columns for a window by looking at the columns of the binary image with the largest sums to the left and right of the middle of the image, and creating of 100 pixels around that peak column. (we assume car currently in lane :))
+
+For each side,  starting from the first (lowest green) box,
+we collect the (y,x) pairs that are nonzero and in the box. This is our line. We then start the next box at the average x point in the image.
+We collect points and build 9 boxes up the image in this way. And then estimate the true position of the lane line by fitting a 2 degree polynomial to all collected points. The resulting polynomial is indicated by the yellow lines.
+
 
 #### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
-I did this in lines # through # in my code in `my_other_file.py`
+
+Curvature is estimated as in the lecture notes
+```{py}
+def get_curvature(a, b, y):
+    numer = (1 + (2*a*y+b)**2)**1.5
+    denom = np.abs(2*a)
+    return numer / denom
+```
+
+We find the vehicle's position in the lane by assuming it is in the middle of the image, and then seeing where in the image the lane lines are. Implementation is in `lane_lines/fit_poly.py` `get_offset` function.
+
 
 #### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
+I copied code to draw lines on the image from the lecture.
 
 ![alt text][image6]
 
@@ -89,12 +104,21 @@ I implemented this step in lines # through # in my code in `yet_another_file.py`
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
 
-Here's a [link to my video result](./project_video.mp4)
+Here's a [link to my video result](./my_project_video.mp4)
 
 ---
 
 ### Discussion
 
-#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+My implementation follows fairly directly from the lecture notes, with the only large discrepancies being only using the x and y gradient thresholds and coding the numpy masks more cleanly. The latter deviation caused my largest bug, where warping the binary image was causing my jupyter kernel to crash because the mask was `int64` instead of `uint8`.
+
+#### Where will your pipeline likely fail?  
+
+The pipeline's current state is that it does not fail catastrophically in the first video, but wobbles around second 43. Implementing outlier rejection and/or smoothing did not initially help, presumably, but inspecting the binary_warped image at this time step (and for most of the challenge video) revealed utter chaos. It is likely to fail when that car is in one of the middle lanes, or the beginning of a lane line is obfuscated (throwing off the second window start).
+
+#### What could you do to make it more robust?
+Next steps that might fix the wobble and improve performance on the challenge video include:
+- restrict histogram peak search (do not look for windows far from center
+- use gradient direction and magnitude filters (already implemented!)

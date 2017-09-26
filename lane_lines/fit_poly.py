@@ -86,7 +86,8 @@ def fit_poly(binary_warped, xm_per_pix=xm_per_pix, ym_per_pix=ym_per_pix):
         win_xright_low = rightx_current - margin
         win_xright_high = rightx_current + margin
         # Draw the windows on the visualization image
-        cv2.rectangle(out_img,(win_xleft_low,win_y_low),(win_xleft_high,win_y_high),
+        cv2.rectangle(out_img,(win_xleft_low,win_y_low),
+                      (win_xleft_high,win_y_high),
         (0,255,0), 2)
         cv2.rectangle(out_img,(win_xright_low,win_y_low),(win_xright_high,win_y_high),
         (0,255,0), 2)
