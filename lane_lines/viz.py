@@ -15,3 +15,5 @@ def plot_side_by_side(left_img, left_title, right_img, right_title, figsize=(20,
     else:
         axes[1].imshow(right_img, cmap=rightCmap)
     axes[1].set_title(right_title)
+
+
