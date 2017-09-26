@@ -1,9 +1,7 @@
-import numpy as np
-import cv2
-import matplotlib.pyplot as plt
 import pickle
 
-from lane_lines.sobel_utils import apply_threshold, abs_sobel_thresh, direction_thresh, mag_thresh
+import cv2
+import numpy as np
 
 ym_per_pix = 30/720 # meters per pixel in y dimension
 xm_per_pix = 3.7/700 # meters per pixel in x dimension
@@ -28,13 +26,6 @@ def warp(img):
     img_size = (img.shape[1], img.shape[0])
     warped = cv2.warpPerspective(img, M, img_size)
     return warped
-
-def get_threshd_image(img):
-    schannel = get_s_channel(img)
-    x_sobel_threshd = abs_sobel_thresh(schannel, orient='x', thresh_min=10, thresh_max=160)
-    y_sobel_threshd = abs_sobel_thresh(schannel, orient='y', thresh_min=10, thresh_max=160)
-    combined_mask = x_sobel_threshd | y_sobel_threshd #| mag_threshd # dont use dir_bthresh
-    return combined_mask.astype('uint8')
 
 
 def get_curvature(a, b, y):

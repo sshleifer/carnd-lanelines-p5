@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+from lane_lines.fit_poly import get_s_channel
+
 
 def apply_threshold(img, thresh_min, thresh_max):
     '''return ((img > thresh_min) & (img < thresh_max)).astype(int)'''
@@ -42,5 +44,9 @@ def direction_thresh(gray, sobel_kernel=3, thresh_min=.8, thresh_max=1.2):
     return apply_threshold(absgraddir, thresh_min, thresh_max)
 
 
-def combined_gradients(gray):
-    raise NotImplementedError
+def get_threshd_image(img):
+    schannel = get_s_channel(img)
+    x_sobel_threshd = abs_sobel_thresh(schannel, orient='x', thresh_min=10, thresh_max=160)
+    y_sobel_threshd = abs_sobel_thresh(schannel, orient='y', thresh_min=10, thresh_max=160)
+    combined_mask = x_sobel_threshd | y_sobel_threshd #| mag_threshd # dont use dir_bthresh
+    return combined_mask.astype('uint8')

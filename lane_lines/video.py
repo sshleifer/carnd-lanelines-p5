@@ -2,7 +2,8 @@ import cv2
 from moviepy.editor import VideoFileClip, ImageSequenceClip
 import numpy as np
 from lane_lines.line import Lane
-from lane_lines.fit_poly import fit_poly, warp, get_threshd_image, Minv, draw_line
+from lane_lines.fit_poly import fit_poly, warp, Minv, draw_line
+from lane_lines.sobel_utils import get_threshd_image
 
 
 def is_valid_curve(last_l, last_r, new_l, new_r):
