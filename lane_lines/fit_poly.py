@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 ym_per_pix = 30/720 # meters per pixel in y dimension
-xm_per_pix = 3.7/700 # meters per pixel in x dimension
+xm_per_pix = 3.7/825 # meters per pixel in x dimension
 
 M, Minv, mtx, dist = pickle.load(open('./pickled_data/camera_calibration.p', 'rb'))
 
@@ -36,7 +36,7 @@ def get_curvature(a, b, y):
 def get_offset(img, left_fit_m, right_fit_m):
     left_line_loc = predict_poly(left_fit_m, img.shape[1] * xm_per_pix)
     right_line_loc = predict_poly(right_fit_m, img.shape[1] * xm_per_pix)
-    vehicle = img.shape[1]*xm_per_pix / 2.
+    vehicle = img.shape[1]*ym_per_pix / 2.
     center = np.mean([left_line_loc, right_line_loc])
     return vehicle - center
 
@@ -126,7 +126,7 @@ def fit_poly(binary_warped, xm_per_pix=xm_per_pix, ym_per_pix=ym_per_pix):
     # Fit new polynomials to x,y in world space
     left_fit_cr = np.polyfit(lefty * ym_per_pix, leftx * xm_per_pix, 2)
     right_fit_cr = np.polyfit(righty * ym_per_pix, rightx * xm_per_pix, 2)
-    y_eval = max(ploty)
+    y_eval = max(ploty) # TODO(SS): FIXME multiply by ymperpix
     # Calculate the new radii of curvature
     left_curverad = get_curvature(left_fit_cr[0], left_fit_cr[1], y_eval)
     right_curverad = get_curvature(right_fit_cr[0], right_fit_cr[1], y_eval)

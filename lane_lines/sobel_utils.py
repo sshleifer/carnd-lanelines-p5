@@ -44,9 +44,10 @@ def direction_thresh(gray, sobel_kernel=3, thresh_min=.8, thresh_max=1.2):
     return apply_threshold(absgraddir, thresh_min, thresh_max)
 
 
-def get_threshd_image(img):
+def get_threshd_image(img, x_min=10, y_min=160, x_max=160, y_max=160):
+    # TODO(SS): also use R channel
     schannel = get_s_channel(img)
-    x_sobel_threshd = abs_sobel_thresh(schannel, orient='x', thresh_min=10, thresh_max=160)
-    y_sobel_threshd = abs_sobel_thresh(schannel, orient='y', thresh_min=10, thresh_max=160)
+    x_sobel_threshd = abs_sobel_thresh(schannel, orient='x', thresh_min=x_min, thresh_max=x_max)
+    y_sobel_threshd = abs_sobel_thresh(schannel, orient='y', thresh_min=y_min, thresh_max=y_max)
     combined_mask = x_sobel_threshd | y_sobel_threshd #| mag_threshd # dont use dir_bthresh
     return combined_mask.astype('uint8')
