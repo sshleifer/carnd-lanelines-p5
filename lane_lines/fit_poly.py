@@ -126,7 +126,7 @@ def fit_poly(binary_warped, xm_per_pix=xm_per_pix, ym_per_pix=ym_per_pix):
     # Fit new polynomials to x,y in world space
     left_fit_cr = np.polyfit(lefty * ym_per_pix, leftx * xm_per_pix, 2)
     right_fit_cr = np.polyfit(righty * ym_per_pix, rightx * xm_per_pix, 2)
-    y_eval = max(ploty) # TODO(SS): FIXME multiply by ymperpix
+    y_eval = max(ploty) #* ym_per_pix
     # Calculate the new radii of curvature
     left_curverad = get_curvature(left_fit_cr[0], left_fit_cr[1], y_eval)
     right_curverad = get_curvature(right_fit_cr[0], right_fit_cr[1], y_eval)
