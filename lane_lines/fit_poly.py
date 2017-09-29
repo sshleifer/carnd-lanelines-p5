@@ -33,13 +33,18 @@ def get_curvature(a, b, y):
     denom = np.abs(2*a)
     return numer / denom
 
-def get_offset(img, left_fit_m, right_fit_m):
-    left_line_loc = predict_poly(left_fit_m, img.shape[1] * xm_per_pix)
-    right_line_loc = predict_poly(right_fit_m, img.shape[1] * xm_per_pix)
-    vehicle = img.shape[1]*ym_per_pix / 2.
-    center = np.mean([left_line_loc, right_line_loc])
-    return vehicle - center
+def get_x_for_max_y(bug, left_fit):
+    return predict_poly(left_fit, bug.shape[0])
 
+
+def get_offset(img, left_fit, right_fit):
+    left_lane_pos_pixels = get_x_for_max_y(img, left_fit)
+    right_lane_pos_pixels = get_x_for_max_y(img, right_fit)
+    vehicle_pos_pixels = img.shape[1] / 2.  # vehicle in center of image
+    center_of_lane_pos_px = np.mean([left_lane_pos_pixels, right_lane_pos_pixels])
+    vehicle_offset_pixels = vehicle_pos_pixels - center_of_lane_pos_px
+    vehicle_offset_meters = vehicle_offset_pixels * xm_per_pix
+    return vehicle_offset_meters
 
 def predict_poly(coeffs, val):
     return coeffs[0] * val**2 + coeffs[1] * val + coeffs[2]
@@ -126,11 +131,11 @@ def fit_poly(binary_warped, xm_per_pix=xm_per_pix, ym_per_pix=ym_per_pix):
     # Fit new polynomials to x,y in world space
     left_fit_cr = np.polyfit(lefty * ym_per_pix, leftx * xm_per_pix, 2)
     right_fit_cr = np.polyfit(righty * ym_per_pix, rightx * xm_per_pix, 2)
-    y_eval = max(ploty) #* ym_per_pix
+    y_eval = max(ploty) * ym_per_pix
     # Calculate the new radii of curvature
     left_curverad = get_curvature(left_fit_cr[0], left_fit_cr[1], y_eval)
     right_curverad = get_curvature(right_fit_cr[0], right_fit_cr[1], y_eval)
-    offset = get_offset(out_img, left_fit_cr, right_fit_cr)
+    offset = get_offset(out_img, left_fit, right_fit)
     out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
     out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
     return (left_fit, right_fit,
