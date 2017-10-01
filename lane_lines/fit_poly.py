@@ -1,7 +1,6 @@
-import pickle
-
 import cv2
 import numpy as np
+import pickle
 
 ym_per_pix = 30/720 # meters per pixel in y dimension
 xm_per_pix = 3.7/825 # meters per pixel in x dimension
@@ -13,13 +12,14 @@ def rgb_read(path):
     srcBGR = cv2.imread(path)
     return cv2.cvtColor(srcBGR, cv2.COLOR_BGR2RGB)
 
-def undistort_and_hls(image, mtx=mtx, dist=dist):
-    undist = cv2.undistort(image, mtx, dist, None, mtx)
-    hls = cv2.cvtColor(undist, cv2.COLOR_BGR2HLS)
-    return hls
 
-def get_s_channel(image, mtx=mtx, dist=dist):
-    return undistort_and_hls(image, mtx, dist)[:,:,2]
+def undistort(image, mtx=mtx, dist=dist):
+    return cv2.undistort(image, mtx, dist, None, mtx)
+
+
+def get_s_channel(image):
+    hls = cv2.cvtColor(image, cv2.COLOR_BGR2HLS)
+    return hls[:,:,2]
 
 
 def warp(img):
@@ -92,10 +92,9 @@ def fit_poly(binary_warped, xm_per_pix=xm_per_pix, ym_per_pix=ym_per_pix):
         win_xright_high = rightx_current + margin
         # Draw the windows on the visualization image
         cv2.rectangle(out_img,(win_xleft_low,win_y_low),
-                      (win_xleft_high,win_y_high),
-        (0,255,0), 2)
+                      (win_xleft_high,win_y_high), (0,255,0), 2)
         cv2.rectangle(out_img,(win_xright_low,win_y_low),(win_xright_high,win_y_high),
-        (0,255,0), 2)
+                      (0,255,0), 2)
         # Identify the nonzero pixels in x and y within the window
         good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
         (nonzerox >= win_xleft_low) &  (nonzerox < win_xleft_high)).nonzero()[0]
@@ -124,9 +123,6 @@ def fit_poly(binary_warped, xm_per_pix=xm_per_pix, ym_per_pix=ym_per_pix):
     left_fit = np.polyfit(lefty, leftx, 2)
     right_fit = np.polyfit(righty, rightx, 2)
     ploty = np.linspace(0, binary_warped.shape[0]-1, binary_warped.shape[0] )
-
-    left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
-    right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
 
     # Fit new polynomials to x,y in world space
     left_fit_cr = np.polyfit(lefty * ym_per_pix, leftx * xm_per_pix, 2)
